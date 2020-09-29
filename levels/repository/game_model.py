@@ -7,7 +7,7 @@ class GameMode:
   MEDIUM = 1
   HARD = 2
   JACKPOT = 3
-
+  CUSTOM = 4
 
 class GameModel:
 
