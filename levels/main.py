@@ -116,7 +116,8 @@ class DAOlevels(IconScoreBase):
     
   @external(readonly=True)
   def name(self) -> str:
-    
+    return self._name
+  
   # ================================================
   #  Internal methods
   # ================================================
