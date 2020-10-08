@@ -474,7 +474,7 @@ class DAOlevels(IconScoreBase):
     return max_bet
 
   def _take_wager_and_payout(self, bet_amount: int, payout_amount: int, rake_amount: int) -> None:
-    self.FundTransfer(self._iconBetDB.iconbet_score.get(), self.msg.value, "Sending icx to Roulette")
+    self.FundTransfer(self._iconBetDB.iconbet_score.get(), bet_amount, "Sending icx to Roulette")
     # send wager to iconbet
     self.icx.transfer(self._iconBetDB.iconbet_score.get(), bet_amount)
     self._roulette_score.take_wager(bet_amount)
@@ -484,7 +484,7 @@ class DAOlevels(IconScoreBase):
     self._roulette_score.wager_payout(payout_amount)
 
   def _take_wager(self, bet_amount: int, rake_amount: int) -> None:
-    self.FundTransfer(self._iconBetDB.iconbet_score.get(), self.msg.value, "Sending icx to Roulette")
+    self.FundTransfer(self._iconBetDB.iconbet_score.get(), bet_amount, "Sending icx to Roulette")
     # send wager to iconbet
     self.icx.transfer(self._iconBetDB.iconbet_score.get(), bet_amount)
     self._roulette_score.take_wager(bet_amount)
