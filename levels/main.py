@@ -493,6 +493,10 @@ class DAOlevels(IconScoreBase):
 
   def _get_random(self, brick_count: int, user_seed: str = '', ) -> int:
     # generates a random number between 1 - max options per bet
+
+    if self.msg.sender.is_contract:
+      revert("ICONbet: SCORE cant play games")
+    
     seed = (str(bytes.hex(self.tx.hash)) + str(self.now()) + user_seed)
     brick = (int.from_bytes(sha3_256(seed.encode()), "big") % brick_count + 1) / 1
     return int(brick)
