@@ -65,9 +65,10 @@ class InvalidCustomTileRange(Exception):
 class DAOlevels(IconScoreBase):
   _NAME = "DAOlevels"
   _ADMIN_ADDRESS = "Admin_Address"
+  _CONSUME_STEP_COUNT = "consume_step_count"
 
   # ================================================
-  #  Event Logs
+  #  Event Logs_CONSUME_LOOP_COUNT
   # ================================================
   @eventlog(indexed=1)
   def NewGameStarted(self, game_details: str) -> None:
@@ -101,6 +102,7 @@ class DAOlevels(IconScoreBase):
     self._name = DAOlevels._NAME
     self._iconBetDB = IconBetDB(db)
     self._promoDB = PromoDB(db)
+    self._consume_step_count = VarDB(self._CONSUME_STEP_COUNT, db, value_type=int)
     self._roulette_score = self.create_interface_score(self._iconBetDB.iconbet_score.get(), RouletteInterface)
     self._game_admin = VarDB(self._ADMIN_ADDRESS, db, value_type=Address)
     self._db = db
@@ -186,6 +188,12 @@ class DAOlevels(IconScoreBase):
     open_game_list = game_repository.get_open_games(player_address)
     return open_game_list
 
+  def _consume_steps(self, consumable: str) -> None:
+    consume_loops = self._consume_step_count.get()
+    for i in range(consume_loops):
+      json_object = json_loads(consumable)
+      json_dumps(json_object)
+
   def _select_tile(self, player_address: Address, active_game_num: int, square_id: int, user_seed: str):
     # this is the main betting function of the game
     # each call to the select_tile will pass in a square id (denoted by the number of tiles per row for that game mode
@@ -256,6 +264,7 @@ class DAOlevels(IconScoreBase):
               else:
                 self._promoDB.promo_jackpot_wins.set(promo_wins)
             else:
+              self._consume_steps(json_dumps(game))
               new_level = current_level + 1
               game_repository.increase_level(player_address, active_game_num, random_number, square_id)
               self.SelectedSquareResult(random_number, f"SAFE! - You are now on level: {new_level}")
@@ -271,6 +280,7 @@ class DAOlevels(IconScoreBase):
             self.SelectedSquareResult(random_number, "LOST! - You landed on a Bomb!!")
             game_repository.remove_from_active_game(player_address, active_game_num)
           else:
+            self._consume_steps(json_dumps(game))
             new_level = current_level + 1
             game_repository.increase_level(player_address, active_game_num, random_number, square_id)
             self.SelectedSquareResult(random_number, f"SAFE! - You are now on level: {new_level}")
@@ -305,6 +315,7 @@ class DAOlevels(IconScoreBase):
             Logger.debug(f'Send failed. Exception: {e}', TAG)
             revert(f'Network problem. Winnings not sent. Returning funds. {str(e)}')
         else:
+          self._consume_steps(json_dumps(game))
           game_repository.increase_level_and_balance(player_address, active_game_num, random_number, square_id)
           self.SelectedSquareResult(random_number, f"SAFE! - you are now on level: {new_level}")
 
@@ -335,6 +346,7 @@ class DAOlevels(IconScoreBase):
             Logger.debug(f'Send failed. Exception: {e}', TAG)
             revert(f'Network problem. Winnings not sent. Returning funds. {str(e)}')
         else:
+          self._consume_steps(json_dumps(game))
           game_repository.increase_level_and_balance(player_address, active_game_num, random_number, square_id)
           self.SelectedSquareResult(random_number, f"SAFE! - you are now on level: {new_level}")
 
@@ -360,6 +372,7 @@ class DAOlevels(IconScoreBase):
             Logger.debug(f'Send failed. Exception: {e}', TAG)
             revert(f'Network problem. Winnings not sent. Returning funds. {str(e)}')
         else:
+          self._consume_steps(json_dumps(game))
           game_repository.increase_level_and_balance(player_address, active_game_num, random_number, square_id)
           self.SelectedSquareResult(random_number, f"SAFE! - you are now on level: {new_level}")
       else:
@@ -771,6 +784,24 @@ class DAOlevels(IconScoreBase):
     :return: Address
     """
     return self._game_admin.get()
+
+  @external
+  def set_loops(self, loops: int) -> None:
+    """
+      A function to set the number of loops required
+      :return: None
+    """
+    if self.msg.sender != self.owner:
+      revert('Only the owner can call set_loop method')
+    self._consume_step_count.set(loops)
+
+  @external(readonly=True)
+  def get_loops(self) -> int:
+    """
+      A function to return the number of loops
+      :return: int
+    """
+    return self._consume_step_count.get()
 
   def fallback(self):
     pass
